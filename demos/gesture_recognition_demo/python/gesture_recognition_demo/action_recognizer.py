@@ -70,15 +70,19 @@ class ActionRecognizer(IEModel):
 
     def _prepare_net_input(self, images, roi):
         """Converts input sequence of images into blob of data"""
-
+        print("Yuxincui images shape: ",images.shape)
+        print("Yuxincui roi: ",roi)
         data = np.stack([self._process_image(img, roi) for img in images], axis=0)
+        print("Yuxincui data.shape 1: ",data.shape)
         data = data.reshape((1,) + data.shape)
+        print("Yuxincui data.shape 2: ",data.shape)
         data = np.transpose(data, (0, 2, 1, 3, 4))
+        print("Yuxincui data.shape 3: ",data.shape)
+        
         return data
 
     def __call__(self, frame_buffer, person_roi):
         """Runs model on the specified input"""
-
         central_roi = self._convert_to_central_roi(person_roi,
                                                    self.input_height, self.input_width,
                                                    self.img_scale)

@@ -121,35 +121,49 @@ public:
         : cap(cap),
           producer(batch_size, batch_fps, drop_batch),
           source_fps(cap->fps()) {
+        slog::info << "Yuxincui stream_source.hpp 1" << slog::endl;
         if (source_fps <= 0.) {
             source_fps = 30.;
             wait_gap = true;
             slog::warn << "Got a non-positive value as FPS of the input. Interpret it as 30 FPS" << slog::endl;
         }
+        slog::info << "Yuxincui stream_source.hpp 2" << slog::endl;
         /** Create and get first image for batch **/
         if (!first_batch.empty()) {
+            slog::info << "Yuxincui stream_source.hpp 3" << slog::endl;
             throw std::runtime_error("first_batch must be empty before creation");
         }
         if (batch_size == 0 || batch_size == 1) {
+            slog::info << "Yuxincui stream_source.hpp 4" << slog::endl;
             throw std::runtime_error("Batch must contain more than one image");
         }
 
         /** Reading of frame with ImagesCapture class **/
+        slog::info << "Yuxincui stream_source.hpp 5" << slog::endl;
         read_time = std::chrono::steady_clock::now();
+        slog::info << "Yuxincui stream_source.hpp 6" << slog::endl;
         cv::Mat fast_frame = cap->read();
+        slog::info << "Yuxincui stream_source.hpp 7" << slog::endl;
         if (!fast_frame.data) {
+            slog::info << "Yuxincui stream_source.hpp 8" << slog::endl;
             throw std::runtime_error("Couldn't grab the frame");
         }
+        slog::info << "Yuxincui stream_source.hpp 9" << slog::endl;
         producer.fillFastFrame(fast_frame);
+        slog::info << "Yuxincui stream_source.hpp 10" << slog::endl;
         fast_frame.copyTo(thread_frame);
+        slog::info << "Yuxincui stream_source.hpp 11" << slog::endl;
         /** Batch filling with constant time step **/
         std::thread fill_bath_thr(runBatchFill,
                                   std::cref(thread_frame),
                                   std::ref(producer),
                                   std::ref(read_time),
                                   std::ref(is_filling_possible));
+        slog::info << "Yuxincui stream_source.hpp 12" << slog::endl;
         fill_bath_thr.detach();
+        slog::info << "Yuxincui stream_source.hpp 13" << slog::endl;
         first_batch = producer.getBatch();
+        slog::info << "Yuxincui stream_source.hpp 14" << slog::endl;
     }
 
 protected:

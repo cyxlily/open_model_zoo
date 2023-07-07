@@ -31,6 +31,7 @@ labels = []
 objects = {}
 
 for file in files_list:
+    print("file: ", file)
     label = file.rpartition(os.sep)[2].rpartition('.')[0]
     path = os.path.abspath(file)
 

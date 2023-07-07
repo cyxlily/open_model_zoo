@@ -461,18 +461,25 @@ public:
         std::vector<cv::Mat> landmarks;
         std::vector<cv::Mat> embeddings;
         std::vector<cv::Mat> face_rois;
-
+        slog::info << "Yuxincui recognizer.cpp 1" << slog::endl;
         auto face_roi = [&](const detection::DetectedObject& face) {
             return frame(face.rect);
         };
+        slog::info << "Yuxincui recognizer.cpp 2" << slog::endl;
         if (numFaces < maxLandmarksBatch) {
+            slog::info << "Yuxincui recognizer.cpp 3" << slog::endl;
             std::transform(faces.begin(), faces.end(), std::back_inserter(face_rois), face_roi);
+            slog::info << "Yuxincui recognizer.cpp 4" << slog::endl;
             landmarks_detector.Compute(face_rois, &landmarks, cv::Size(2, 5));
+            slog::info << "Yuxincui recognizer.cpp 5" << slog::endl;
             AlignFaces(&face_rois, &landmarks);
+            slog::info << "Yuxincui recognizer.cpp 6" << slog::endl;
             face_reid.Compute(face_rois, &embeddings);
+            slog::info << "Yuxincui recognizer.cpp 7" << slog::endl;
         } else {
             auto embedding = [&](cv::Mat& emb) { return emb; };
             for (int n = numFaces; n > 0; n -= maxLandmarksBatch) {
+                slog::info << "Yuxincui recognizer.cpp 8" << slog::endl;
                 landmarks.clear();
                 face_rois.clear();
                 size_t start_idx = size_t(numFaces) - n;
@@ -641,7 +648,7 @@ int main(int argc, char* argv[]) {
 
             face_recognizer.reset(new FaceRecognizerNull);
         }
-
+        slog::info << "Yuxincui main 1" << slog::endl;
         // Create tracker for reid
         TrackerParams tracker_reid_params;
         tracker_reid_params.min_track_duration = 1;
@@ -704,6 +711,7 @@ int main(int argc, char* argv[]) {
 
         bool is_last_frame = false;
         while (!is_last_frame) {
+            slog::info << "Yuxincui main 2" << slog::endl;
             auto startTime = std::chrono::steady_clock::now();
             cv::Mat prev_frame = std::move(frame);
             frame = cap->read();
@@ -711,18 +719,18 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error("Can't track objects on images of different size");
             }
             is_last_frame = !frame.data;
-
             logger.CreateNextFrameRecord(FLAGS_i, work_num_frames, prev_frame.cols, prev_frame.rows);
             char key = cv::waitKey(1);
             if (key == ESC_KEY) {
                 break;
             }
             presenter.handleKey(key);
-
             presenter.drawGraphs(prev_frame);
 
             sc_visualizer.SetFrame(prev_frame);
+            slog::info << "Yuxincui main 3" << slog::endl;
             if (actions_type == TOP_K) {
+                slog::info << "Yuxincui main 4" << slog::endl;
                 if ( (is_monitoring_enabled && key == SPACE_KEY) || (!is_monitoring_enabled && key != SPACE_KEY) ) {
                     if (key == SPACE_KEY) {
                         action_detector->wait();
@@ -792,23 +800,39 @@ int main(int argc, char* argv[]) {
                     metrics.update(startTime, frame, { 10, 22 }, cv::FONT_HERSHEY_COMPLEX, 0.65);
                 }
             } else {
+                slog::info << "Yuxincui main 5" << slog::endl;
                 face_detector->wait();
+                slog::info << "Yuxincui main 6" << slog::endl;
                 detection::DetectedObjects faces = face_detector->fetchResults();
+                slog::info << "Yuxincui main 7" << slog::endl;
                 action_detector->wait();
+                slog::info << "Yuxincui main 8" << slog::endl;
                 DetectedActions actions = action_detector->fetchResults();
+                slog::info << "Yuxincui main 9" << slog::endl;
                 if (!is_last_frame) {
+                    slog::info << "Yuxincui main 10" << slog::endl;
                     face_detector->enqueue(frame);
+                    slog::info << "Yuxincui main 11" << slog::endl;
                     face_detector->submitRequest();
+                    slog::info << "Yuxincui main 12" << slog::endl;
                     action_detector->enqueue(frame);
+                    slog::info << "Yuxincui main 13" << slog::endl;
                     action_detector->submitRequest();
+                    slog::info << "Yuxincui main 14" << slog::endl;
                 }
+                slog::info << "Yuxincui main 15" << slog::endl;
                 auto ids = face_recognizer->Recognize(prev_frame, faces);
+                slog::info << "Yuxincui main 16" << slog::endl;
                 TrackedObjects tracked_face_objects;
+                slog::info << "Yuxincui main 17" << slog::endl;
 
                 for (size_t i = 0; i < faces.size(); i++) {
+                    slog::info << "Yuxincui main 18" << slog::endl;
                     tracked_face_objects.emplace_back(faces[i].rect, faces[i].confidence, ids[i]);
                 }
+                slog::info << "Yuxincui main 19" << slog::endl;
                 tracker_reid.Process(prev_frame, tracked_face_objects, work_num_frames);
+                slog::info << "Yuxincui main 20" << slog::endl;
                 const auto tracked_faces = tracker_reid.TrackedDetectionsWithLabels();
 
                 TrackedObjects tracked_action_objects;

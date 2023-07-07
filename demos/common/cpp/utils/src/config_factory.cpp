@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-
+#include <utils/slog.hpp>
 #include "utils/config_factory.h"
 
 #include <set>
@@ -40,19 +40,21 @@ ModelConfig ConfigFactory::getUserConfig(const std::string& flags_d,
                                          const std::string& flags_nstreams,
                                          uint32_t flags_nthreads) {
     auto config = getCommonConfig(flags_d, flags_nireq);
-
+    slog::info << "Yuxincui getUserConfig 1" << slog::endl;
     std::map<std::string, int> deviceNstreams = parseValuePerDevice(config.getDevices(), flags_nstreams);
     for (const auto& device : config.getDevices()) {
         if (device == "CPU") {  // CPU supports a few special performance-oriented keys
             // limit threading for CPU portion of inference
             if (flags_nthreads != 0)
                 config.compiledModelConfig.emplace(ov::inference_num_threads.name(), flags_nthreads);
-
+            slog::info << "Yuxincui getUserConfig 2" << slog::endl;
             config.compiledModelConfig.emplace(ov::affinity.name(), ov::Affinity::NONE);
-
+            slog::info << "Yuxincui getUserConfig 3" << slog::endl;
             ov::streams::Num nstreams =
                 deviceNstreams.count(device) > 0 ? ov::streams::Num(deviceNstreams[device]) : ov::streams::AUTO;
+            slog::info << "Yuxincui getUserConfig 4" << slog::endl;
             config.compiledModelConfig.emplace(ov::streams::num.name(), nstreams);
+            slog::info << "Yuxincui getUserConfig 5" << slog::endl;
         } else if (device == "GPU") {
             ov::streams::Num nstreams =
                 deviceNstreams.count(device) > 0 ? ov::streams::Num(deviceNstreams[device]) : ov::streams::AUTO;
@@ -66,6 +68,7 @@ ModelConfig ConfigFactory::getUserConfig(const std::string& flags_d,
             }
         }
     }
+    slog::info << "Yuxincui getUserConfig 6" << slog::endl;
     return config;
 }
 

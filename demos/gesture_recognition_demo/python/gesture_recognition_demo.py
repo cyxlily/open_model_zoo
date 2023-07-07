@@ -148,6 +148,7 @@ def main():
 
     last_caption = None
     active_object_id = -1
+    print("active_object_id: ",active_object_id)
     tracker_labels_map = {}
     tracker_labels = set()
 
@@ -168,26 +169,35 @@ def main():
         detections, tracker_labels_map = person_tracker.add_frame(
             frame, len(OBJECT_IDS), tracker_labels_map)
         if detections is None:
+            print("detections is None!")
             active_object_id = -1
             last_caption = None
 
         if len(detections) == 1:
+            print("len detections == 1")
             active_object_id = 0
 
         if active_object_id >= 0:
+            print("active_object >= 0")
             cur_det = [det for det in detections if det.id == active_object_id]
+            print("cur_det: ",cur_det)
             if len(cur_det) != 1:
+                print("len cur_det != 1")
                 active_object_id = -1
                 last_caption = None
                 continue
-
+            print("Yuxincui batch shape: ", batch.shape)
             recognizer_result = action_recognizer(batch, cur_det[0].roi.reshape(-1))
+            print("recognizer_result: ",recognizer_result)
             if recognizer_result is not None:
+                print("recognizer_result is not None")
                 action_class_id = np.argmax(recognizer_result)
+                print("action_class_id: ",action_class_id)
                 action_class_label = \
                     class_map[action_class_id] if class_map is not None else action_class_id
-
+                print("action_class_label: ",action_class_label)
                 action_class_score = np.max(recognizer_result)
+                print("action_class_score: ",action_class_score)
                 if action_class_score > args.action_threshold:
                     last_caption = 'Last gesture: {} '.format(action_class_label)
 
@@ -230,8 +240,10 @@ def main():
             last_caption = None
         elif key in OBJECT_IDS:  # 0-9
             local_bbox_id = int(chr(key))
+            print("local_bbox_id: ",local_bbox_id)
             if local_bbox_id in tracker_labels:
                 active_object_id = local_bbox_id
+                print("active_object_id: ",active_object_id)
         else:
             presenter.handleKey(key)
 

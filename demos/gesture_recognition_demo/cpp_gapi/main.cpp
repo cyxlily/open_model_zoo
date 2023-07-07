@@ -84,56 +84,63 @@ int main(int argc, char* argv[]) {
         const auto ar_net_shape = getNetShape(FLAGS_m_a);
 
         /** Get information about frame from cv::VideoCapture **/
-        std::shared_ptr<ImagesCapture> cap = openImagesCapture(FLAGS_i,
+        slog::info << "Yuxincui vedio 1" << slog::endl;
+	std::shared_ptr<ImagesCapture> cap = openImagesCapture(FLAGS_i,
                                                                FLAGS_loop,
                                                                read_type::safe,
                                                                0,
                                                                std::numeric_limits<size_t>::max(),
                                                                stringToSize(FLAGS_res));
-        const auto tmp = cap->read();
+        slog::info << "Yuxincui vedio 2" << slog::endl;
+	const auto tmp = cap->read();
+	slog::info << "Yuxincui vedio 3" << slog::endl;
         cap.reset();
+	slog::info << "Yuxincui vedio 4" << slog::endl;
         cv::Size frame_size = cv::Size{tmp.cols, tmp.rows};
+	slog::info << "Yuxincui vedio 5" << slog::endl;
         cap = openImagesCapture(FLAGS_i,
                                 FLAGS_loop,
                                 read_type::safe,
                                 0,
                                 std::numeric_limits<size_t>::max(),
                                 stringToSize(FLAGS_res));
-
+        slog::info << "Yuxincui vedio 6" << slog::endl;
         /** Share runtime id with graph **/
         auto current_person_id_m = std::make_shared<size_t>(0);
-
+        slog::info << "Yuxincui vedio 7" << slog::endl;
         /** ---------------- Main graph of demo ---------------- **/
         /** Graph inputs **/
         cv::GArray<cv::GMat> batch;
+	slog::info << "Yuxincui vedio 8" << slog::endl;
         cv::GOpaque<std::shared_ptr<size_t>> current_person_id;
-
+        slog::info << "Yuxincui vedio 9" << slog::endl;
         cv::GMat fast_frame = custom::GetFastFrame::on(batch, frame_size);
-
+        slog::info << "Yuxincui vedio 10" << slog::endl;
         /** Person detection **/
         cv::GMat detections = cv::gapi::infer<nets::PersonDetection>(fast_frame);
-
+        slog::info << "Yuxincui vedio 11" << slog::endl;
         /** Get ROIs from detections **/
         cv::GArray<TrackedObject> objects = custom::ExtractBoundingBox::on(detections, fast_frame, pd_net_shape);
-
+        slog::info << "Yuxincui vedio 12" << slog::endl;
         /** Track detection **/
         cv::GArray<TrackedObject> tracked = custom::TrackPerson::on(fast_frame, objects);
-
+        slog::info << "Yuxincui vedio 13" << slog::endl;
         /** Create clip for AR net **/
         cv::GArray<cv::GMat> clip =
             custom::ConstructClip::on(batch, tracked, ar_net_shape, frame_size, current_person_id);
-
+        slog::info << "Yuxincui vedio 14" << slog::endl;
         /** Action recognition **/
         cv::GArray<cv::GMat> actions = cv::gapi::infer2<nets::ActionRecognition>(fast_frame, clip);
-
+        slog::info << "Yuxincui vedio 15" << slog::endl;
         /** Get action label **/
         cv::GOpaque<int> label = custom::GestureRecognitionPostprocessing::on(actions, static_cast<float>(FLAGS_t));
-
+        slog::info << "Yuxincui vedio 16" << slog::endl;
         /** Inputs and outputs of graph **/
         auto graph = cv::GComputation(cv::GIn(batch, current_person_id), cv::GOut(fast_frame, tracked, label));
         /** ---------------- End of graph ---------------- **/
         /** Configure networks **/
         // clang-format off
+	slog::info << "Yuxincui vedio 17" << slog::endl;
         auto person_detection =
             cv::gapi::ie::Params<nets::PersonDetection>{
                 FLAGS_m_d,  // path to model
@@ -160,10 +167,15 @@ int main(int argc, char* argv[]) {
                    << slog::endl;
 
         /** Custom kernels **/
+	slog::info << "Yuxincui vedio 18" << slog::endl;
         auto kernels = custom::kernels();
+	slog::info << "Yuxincui vedio 19" << slog::endl;
         auto networks = cv::gapi::networks(person_detection, action_recognition);
+	slog::info << "Yuxincui vedio 20" << slog::endl;
         auto comp = cv::compile_args(kernels, networks);
+	slog::info << "Yuxincui vedio 21" << slog::endl;
         auto pipeline = graph.compileStreaming(std::move(comp));
+	slog::info << "Yuxincui vedio 22" << slog::endl;
 
         /** Output containers for results **/
         cv::Mat out_frame;
@@ -173,18 +185,21 @@ int main(int argc, char* argv[]) {
         /** ---------------- The execution part ---------------- **/
         const float batch_constant_FPS = 15;
         auto drop_batch = std::make_shared<bool>(false);
-        pipeline.setSource(cv::gin(cv::gapi::wip::make_src<custom::GestRecCapSource>(cap,
+        slog::info << "Yuxincui vedio 23" << slog::endl;
+	pipeline.setSource(cv::gin(cv::gapi::wip::make_src<custom::GestRecCapSource>(cap,
                                                                                      frame_size,
                                                                                      static_cast<int>(ar_net_shape[1]),
                                                                                      batch_constant_FPS,
                                                                                      drop_batch),
                                    current_person_id_m));
 
-        std::string gestureWindowName = "Gesture";
+        slog::info << "Yuxincui vedio 24" << slog::endl;
+	std::string gestureWindowName = "Gesture";
 
         cv::Size graphSize{static_cast<int>(frame_size.width / 4), 60};
+	slog::info << "Yuxincui vedio 25" << slog::endl;
         Presenter presenter(FLAGS_u, frame_size.height - graphSize.height - 10, graphSize);
-
+        slog::info << "Yuxincui vedio 26" << slog::endl;
         LazyVideoWriter videoWriter{FLAGS_o, cap->fps(), FLAGS_limit};
 
         /** Fill labels container from file with classes **/
@@ -194,14 +209,19 @@ int main(int argc, char* argv[]) {
         int gesture = 0;
 
         /** Configure drawing utilities **/
+	slog::info << "Yuxincui vedio 27" << slog::endl;
         Visualizer visualizer(FLAGS_no_show, gestureWindowName, labels, FLAGS_s);
 
         bool isStart = true;
         const auto startTime = std::chrono::steady_clock::now();
-        pipeline.start();
+        slog::info << "Yuxincui vedio 28" << slog::endl;
+	pipeline.start();
+	slog::info << "Yuxincui vedio 29" << slog::endl;
         while (pipeline.pull(cv::gout(out_frame, out_detections, out_label_number))) {
+            slog::info << "Yuxincui vedio 30" << slog::endl;
             /** Put FPS to frame**/
             if (isStart) {
+		slog::info << "Yuxincui vedio 31" << slog::endl;
                 metrics.update(startTime,
                                out_frame,
                                {10, 22},
@@ -221,9 +241,10 @@ int main(int argc, char* argv[]) {
                                2,
                                PerformanceMetrics::MetricTypes::FPS);
             }
-
+            slog::info << "Yuxincui vedio 31" << slog::endl;
             /** Display system parameters **/
             presenter.drawGraphs(out_frame);
+	    slog::info << "Yuxincui vedio 32" << slog::endl;
             /** Display the results **/
             visualizer.show(out_frame, out_detections, out_label_number, current_id, gesture);
             gesture = 0;

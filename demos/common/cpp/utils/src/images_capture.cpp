@@ -293,18 +293,21 @@ std::unique_ptr<ImagesCapture> openImagesCapture(const std::string& input,
         throw std::runtime_error{"Read length limit must be positive"};
     std::vector<std::string> invalidInputs, openErrors;
     try {
+        slog::info << "Yuxincui try ImreadWrapper" << slog::endl;
         return std::unique_ptr<ImagesCapture>(new ImreadWrapper{input, loop});
     } catch (const InvalidInput& e) { invalidInputs.push_back(e.what()); } catch (const OpenError& e) {
         openErrors.push_back(e.what());
     }
 
     try {
+        slog::info << "Yuxincui try DirReader" << slog::endl;
         return std::unique_ptr<ImagesCapture>(new DirReader{input, loop, initialImageId, readLengthLimit});
     } catch (const InvalidInput& e) { invalidInputs.push_back(e.what()); } catch (const OpenError& e) {
         openErrors.push_back(e.what());
     }
 
     try {
+        slog::info << "Yuxincui try Video" << slog::endl;
         return std::unique_ptr<ImagesCapture>(new VideoCapWrapper{input, loop, type, initialImageId, readLengthLimit});
     } catch (const InvalidInput& e) { invalidInputs.push_back(e.what()); } catch (const OpenError& e) {
         openErrors.push_back(e.what());

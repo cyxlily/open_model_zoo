@@ -313,64 +313,78 @@ cv::Mat renderDetectionData(DetectionResult& result, const ColorPalette& palette
 
 int main(int argc, char* argv[]) {
     try {
+        slog::info << "Yuxincui main 1" << slog::endl;
         PerformanceMetrics metrics;
 
         // ------------------------------ Parsing and validation of input args ---------------------------------
         if (!ParseAndCheckCommandLine(argc, argv)) {
+            slog::info << "Yuxincui main 2" << slog::endl;
             return 0;
         }
-
+        slog::info << "Yuxincui main 3" << slog::endl;
         const auto& strAnchors = split(FLAGS_anchors, ',');
         const auto& strMasks = split(FLAGS_masks, ',');
 
         std::vector<float> anchors;
         std::vector<int64_t> masks;
         try {
+            slog::info << "Yuxincui main 4" << slog::endl;
             for (auto& str : strAnchors) {
                 anchors.push_back(std::stof(str));
             }
         } catch (...) { throw std::runtime_error("Invalid anchors list is provided."); }
 
         try {
+            slog::info << "Yuxincui main 5" << slog::endl;
             for (auto& str : strMasks) {
                 masks.push_back(std::stoll(str));
             }
         } catch (...) { throw std::runtime_error("Invalid masks list is provided."); }
 
         //------------------------------- Preparing Input ------------------------------------------------------
+        slog::info << "Yuxincui main 6" << slog::endl;
         auto cap = openImagesCapture(FLAGS_i, FLAGS_loop, FLAGS_nireq == 1 ? read_type::efficient : read_type::safe);
+        slog::info << "Yuxincui main 7" << slog::endl;
         cv::Mat curr_frame;
 
         //------------------------------ Running Detection routines ----------------------------------------------
         std::vector<std::string> labels;
-        if (!FLAGS_labels.empty())
-            labels = DetectionModel::loadLabels(FLAGS_labels);
+        slog::info << "Yuxincui main 8" << slog::endl;
+        if (!FLAGS_labels.empty()){
+            slog::info << "Yuxincui main 9" << slog::endl;
+            labels = DetectionModel::loadLabels(FLAGS_labels);}
         ColorPalette palette(labels.size() > 0 ? labels.size() : 100);
 
         std::unique_ptr<ModelBase> model;
         if (FLAGS_at == "centernet") {
+            slog::info << "Yuxincui main 10" << slog::endl;
             model.reset(new ModelCenterNet(FLAGS_m, static_cast<float>(FLAGS_t), labels, FLAGS_layout));
         } else if (FLAGS_at == "faceboxes") {
+            slog::info << "Yuxincui main 11" << slog::endl;
             model.reset(new ModelFaceBoxes(FLAGS_m,
                                            static_cast<float>(FLAGS_t),
                                            FLAGS_auto_resize,
                                            static_cast<float>(FLAGS_iou_t),
                                            FLAGS_layout));
         } else if (FLAGS_at == "retinaface") {
+            slog::info << "Yuxincui main 12" << slog::endl;
             model.reset(new ModelRetinaFace(FLAGS_m,
                                             static_cast<float>(FLAGS_t),
                                             FLAGS_auto_resize,
                                             static_cast<float>(FLAGS_iou_t),
                                             FLAGS_layout));
         } else if (FLAGS_at == "retinaface-pytorch") {
+            slog::info << "Yuxincui main 13" << slog::endl;
             model.reset(new ModelRetinaFacePT(FLAGS_m,
                                               static_cast<float>(FLAGS_t),
                                               FLAGS_auto_resize,
                                               static_cast<float>(FLAGS_iou_t),
                                               FLAGS_layout));
         } else if (FLAGS_at == "ssd") {
+            slog::info << "Yuxincui main 14" << slog::endl;
             model.reset(new ModelSSD(FLAGS_m, static_cast<float>(FLAGS_t), FLAGS_auto_resize, labels, FLAGS_layout));
         } else if (FLAGS_at == "yolo") {
+            slog::info << "Yuxincui main 15" << slog::endl;
             model.reset(new ModelYolo(FLAGS_m,
                                       static_cast<float>(FLAGS_t),
                                       FLAGS_auto_resize,
@@ -381,28 +395,34 @@ int main(int argc, char* argv[]) {
                                       masks,
                                       FLAGS_layout));
         } else if (FLAGS_at == "yolov3-onnx") {
+            slog::info << "Yuxincui main 16" << slog::endl;
             model.reset(new ModelYoloV3ONNX(FLAGS_m,
                                             static_cast<float>(FLAGS_t),
                                             labels,
                                             FLAGS_layout));
         } else if (FLAGS_at == "yolox") {
+            slog::info << "Yuxincui main 17" << slog::endl;
             model.reset(new ModelYoloX(FLAGS_m,
                                        static_cast<float>(FLAGS_t),
                                        static_cast<float>(FLAGS_iou_t),
                                        labels,
                                        FLAGS_layout));
         } else {
+            slog::info << "Yuxincui main 18" << slog::endl;
             slog::err << "No model type or invalid model type (-at) provided: " + FLAGS_at << slog::endl;
             return -1;
         }
+        slog::info << "Yuxincui main 19" << slog::endl;
         model->setInputsPreprocessing(FLAGS_reverse_input_channels, FLAGS_mean_values, FLAGS_scale_values);
+        slog::info << "Yuxincui main 20" << slog::endl;
         slog::info << ov::get_openvino_version() << slog::endl;
 
         ov::Core core;
-
+        slog::info << "Yuxincui main 21" << slog::endl;
         AsyncPipeline pipeline(std::move(model),
                                ConfigFactory::getUserConfig(FLAGS_d, FLAGS_nireq, FLAGS_nstreams, FLAGS_nthreads),
                                core);
+        slog::info << "Yuxincui main 22" << slog::endl;
         Presenter presenter(FLAGS_u);
 
         bool keepRunning = true;
@@ -417,43 +437,53 @@ int main(int argc, char* argv[]) {
         cv::Size outputResolution;
         OutputTransform outputTransform = OutputTransform();
         size_t found = FLAGS_output_resolution.find("x");
-
+        slog::info << "Yuxincui main 23" << slog::endl;
         while (keepRunning) {
+            slog::info << "Yuxincui main 24" << slog::endl;
             if (pipeline.isReadyToProcess()) {
+                slog::info << "Yuxincui main 25" << slog::endl;
                 auto startTime = std::chrono::steady_clock::now();
-
+                slog::info << "Yuxincui main 26" << slog::endl;
                 //--- Capturing frame
                 curr_frame = cap->read();
-
+                slog::info << "Yuxincui main 27" << slog::endl;
                 if (curr_frame.empty()) {
+                    slog::info << "Yuxincui main 28" << slog::endl;
                     // Input stream is over
                     break;
                 }
-
+                slog::info << "Yuxincui main 29" << slog::endl;
                 frameNum = pipeline.submitData(ImageInputData(curr_frame),
                                                std::make_shared<ImageMetaData>(curr_frame, startTime));
+                slog::info << "Yuxincui main 30" << slog::endl;
             }
 
             if (frameNum == 0) {
+                slog::info << "Yuxincui main 31" << slog::endl;
                 if (found == std::string::npos) {
+                    slog::info << "Yuxincui main 32" << slog::endl;
                     outputResolution = curr_frame.size();
                 } else {
+                    slog::info << "Yuxincui main 33" << slog::endl;
                     outputResolution = cv::Size{
                         std::stoi(FLAGS_output_resolution.substr(0, found)),
                         std::stoi(FLAGS_output_resolution.substr(found + 1, FLAGS_output_resolution.length()))};
                     outputTransform = OutputTransform(curr_frame.size(), outputResolution);
                     outputResolution = outputTransform.computeResolution();
+                    slog::info << "Yuxincui main 34" << slog::endl;
                 }
             }
-
+            slog::info << "Yuxincui main 35" << slog::endl;
             //--- Waiting for free input slot or output data available. Function will return immediately if any of them
             // are available.
             pipeline.waitForData();
+            slog::info << "Yuxincui main 36" << slog::endl;
 
             //--- Checking for results and rendering data if it's ready
             //--- If you need just plain data without rendering - cast result's underlying pointer to DetectionResult*
             //    and use your own processing instead of calling renderDetectionData().
             while (keepRunning && (result = pipeline.getResult())) {
+                slog::info << "Yuxincui main 37" << slog::endl;
                 auto renderingStart = std::chrono::steady_clock::now();
                 cv::Mat outFrame = renderDetectionData(result->asRef<DetectionResult>(), palette, outputTransform);
 
@@ -484,8 +514,9 @@ int main(int argc, char* argv[]) {
 
         // ------------ Waiting for completion of data processing and rendering the rest of results ---------
         pipeline.waitForTotalCompletion();
-
+        slog::info << "Yuxincui main 38" << slog::endl;
         for (; framesProcessed <= frameNum; framesProcessed++) {
+            slog::info << "Yuxincui main 39" << slog::endl;
             result = pipeline.getResult();
             if (result != nullptr) {
                 auto renderingStart = std::chrono::steady_clock::now();
@@ -506,7 +537,7 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-
+        slog::info << "Yuxincui main 40" << slog::endl;
         slog::info << "Metrics report:" << slog::endl;
         metrics.logTotal();
         logLatencyPerStage(cap->getMetrics().getTotal().latency,

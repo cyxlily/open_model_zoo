@@ -177,36 +177,45 @@ int main(int argc, char** argv) {
 
         slog::info << ov::get_openvino_version() << slog::endl;
         ov::Core core;
-
+        slog::info << "Yuxincui main 1" << slog::endl;
         auto model = detectionModel->compileModel(
             ConfigFactory::getUserConfig(FLAGS_d_det, FLAGS_nireq, FLAGS_nstreams, FLAGS_nthreads),
             core);
+        slog::info << "Yuxincui main 2" << slog::endl;
         auto req = model.create_infer_request();
+        slog::info << "Yuxincui main 3" << slog::endl;
         bool should_keep_tracking_info = should_save_det_log || should_print_out;
+        slog::info << "Yuxincui main 3" << slog::endl;
         std::unique_ptr<PedestrianTracker> tracker =
             CreatePedestrianTracker(reid_model, core, reid_mode, should_keep_tracking_info);
-
+        slog::info << "Yuxincui main 4" << slog::endl;
         std::unique_ptr<ImagesCapture> cap =
             openImagesCapture(FLAGS_i,
                               FLAGS_loop,
                               FLAGS_nireq == 1 ? read_type::efficient : read_type::safe,
                               FLAGS_first,
                               FLAGS_read_limit);
+        slog::info << "Yuxincui main 5" << slog::endl;
         double video_fps = cap->fps();
         if (0.0 == video_fps) {
             // the default frame rate for DukeMTMC dataset
             video_fps = 60.0;
         }
-
+        slog::info << "Yuxincui main 6" << slog::endl;
         auto startTime = std::chrono::steady_clock::now();
+        slog::info << "Yuxincui main 7" << slog::endl;
         cv::Mat frame = cap->read();
+        slog::info << "Yuxincui main 8" << slog::endl;
         cv::Size firstFrameSize = frame.size();
-
+        slog::info << "Yuxincui main 9" << slog::endl;
         LazyVideoWriter videoWriter{FLAGS_o, cap->fps(), FLAGS_limit};
+        slog::info << "Yuxincui main 10" << slog::endl;
         cv::Size graphSize{static_cast<int>(frame.cols / 4), 60};
+        slog::info << "Yuxincui main 11" << slog::endl;
         Presenter presenter(FLAGS_u, 10, graphSize);
-
+        slog::info << "Yuxincui main 12" << slog::endl;
         for (unsigned frameIdx = 0;; ++frameIdx) {
+            slog::info << "Yuxincui main 13" << slog::endl;
             detectionModel->preprocess(ImageInputData(frame), req);
 
             req.infer();
@@ -218,6 +227,7 @@ int main(int argc, char** argv) {
             res.metaData = std::make_shared<ImageMetaData>(frame, std::chrono::steady_clock::now());
 
             for (const auto& outName : detectionModel->getOutputsNames()) {
+                slog::info << "Yuxincui main 14" << slog::endl;
                 const auto& outTensor = req.get_tensor(outName);
 
                 if (ov::element::i32 == outTensor.get_element_type()) {
@@ -230,8 +240,9 @@ int main(int argc, char** argv) {
             auto result = (detectionModel->postprocess(res))->asRef<DetectionResult>();
 
             TrackedObjects detections;
-
+            slog::info << "Yuxincui main 15" << slog::endl;
             for (size_t i = 0; i < result.objects.size(); i++) {
+                slog::info << "Yuxincui main 16" << slog::endl;
                 TrackedObject object;
                 object.confidence = result.objects[i].confidence;
 
@@ -258,7 +269,7 @@ int main(int argc, char** argv) {
                     detections.emplace_back(object);
                 }
             }
-
+            slog::info << "Yuxincui main 17" << slog::endl;
             // timestamp in milliseconds
             uint64_t cur_timestamp = static_cast<uint64_t>(1000.0 / video_fps * frameIdx);
             tracker->Process(frame, detections, cur_timestamp);
