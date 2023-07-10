@@ -37,8 +37,8 @@
 #include <utils/config_factory.h>
 #include <utils/performance_metrics.hpp>
 #include <utils/slog.hpp>
-#include <utils/videos_capture.h>
 #include <utils/default_flags.hpp>
+#include <utils/images_capture.h>
 
 DEFINE_INPUT_FLAGS
 DEFINE_OUTPUT_FLAGS
@@ -89,7 +89,7 @@ DEFINE_string(scale_values, "", scale_values_message);
 
 static void showUsage() {
     std::cout << std::endl;
-    std::cout << "classification_benchmark_demo [OPTION]" << std::endl;
+    std::cout << "gesture_classification_demo [OPTION]" << std::endl;
     std::cout << "Options:" << std::endl;
     std::cout << std::endl;
     std::cout << "    -h                        " << help_message << std::endl;
@@ -140,13 +140,11 @@ bool ParseAndCheckCommandLine(int argc, char* argv[]) {
 }
 
 // Input image is stored inside metadata, as we put it there during submission stage
-cv::Mat renderClassificationData(GestureClassificationResult& result, OutputTransform& outputTransform, std::string last_caption) {
+cv::Mat renderClassificationData(ClassificationResult& result, OutputTransform& outputTransform, std::string last_caption) {
     if (!result.metaData) {
         throw std::invalid_argument("Renderer: metadata is null");
     }
-    const ImageMetaData& gestureclassificationImageMetaData =
-        result.metaData->asRef<const ImageMetaData>();
-    auto outputImg = gestureclassificationImageMetaData.img;
+    auto outputImg = result.metaData->asRef<ImageMetaData>().img;
     //slog::info << "Yuxincui outputImg.dims: " << outputImg.dims << slog::endl;
     if (outputImg.empty()) {
         throw std::invalid_argument("Renderer: image provided in metadata is empty");
@@ -178,9 +176,8 @@ int main(int argc, char* argv[]) {
         }
 
         //------------------------------- Preparing Input ------------------------------------------------------
-        auto cap = openVideosCapture(FLAGS_i, FLAGS_loop, read_type::safe, 8);
+        auto cap = openImagesCapture(FLAGS_i, FLAGS_loop, read_type::safe);
         cv::Mat curr_frame;
-        std::vector<cv::Mat> curr_batch;
 
         //------------------------------ Running routines ----------------------------------------------
         std::vector<std::string> labels_a = GestureClassificationModel::loadLabels(FLAGS_c);
@@ -212,14 +209,12 @@ int main(int argc, char* argv[]) {
             if (pipeline.isReadyToProcess()) {
                 auto startTime = std::chrono::steady_clock::now();
                 //--- Capturing frame
-                curr_batch = cap->get_batch_fake();
-                slog::info << "Yuxincui curr_batch.size: " << curr_batch.size() << slog::endl;
-                if (curr_batch.empty()) {
+                curr_frame = cap->read();
+                if (curr_frame.empty()) {
                     // Input stream is over
                     break;
                 }
-                curr_frame = curr_batch[0];
-                frameNum = pipeline.submitData(GestureClassificationImageInputData(curr_batch),
+                frameNum = pipeline.submitData(ImageInputData(curr_frame),
                                     std::make_shared<ImageMetaData>(curr_frame, startTime));
             }
 
@@ -230,14 +225,14 @@ int main(int argc, char* argv[]) {
             //--- Checking for results and rendering data if it's ready
             while ((result = pipeline.getResult(false)) && keepRunning) {
                 auto renderingStart = std::chrono::steady_clock::now();
-                const GestureClassificationResult& gestureclassificationResult = result->asRef<GestureClassificationResult>();
-                std::string action_class_label = gestureclassificationResult.topLabels.front().label;
+                const ClassificationResult& classificationResult = result->asRef<ClassificationResult>();
+                std::string action_class_label = classificationResult.topLabels.front().label;
                 slog::info << "Yuxincui main action_class_label: "<< action_class_label << slog::endl;
-                cv::Mat outFrame = renderClassificationData(result->asRef<GestureClassificationResult>(), outputTransform, action_class_label);
+                cv::Mat outFrame = renderClassificationData(result->asRef<ClassificationResult>(), outputTransform, action_class_label);
                                 //--- Showing results and device information
                 presenter.drawGraphs(outFrame);
                 renderMetrics.update(renderingStart);
-                metrics.update(gestureclassificationResult.metaData->asRef<const ImageMetaData>().timeStamp,
+                metrics.update(classificationResult.metaData->asRef<const ImageMetaData>().timeStamp,
                                outFrame,
                                {10, 22},
                                cv::FONT_HERSHEY_COMPLEX,
@@ -262,14 +257,14 @@ int main(int argc, char* argv[]) {
             result = pipeline.getResult();
             if (result != nullptr) {
                 auto renderingStart = std::chrono::steady_clock::now();
-                const GestureClassificationResult& gestureclassificationResult = result->asRef<GestureClassificationResult>();
-                std::string action_class_label = gestureclassificationResult.topLabels.front().label;
+                const ClassificationResult& classificationResult = result->asRef<ClassificationResult>();
+                std::string action_class_label = classificationResult.topLabels.front().label;
                 slog::info << "Yuxincui main action_class_label: "<< action_class_label << slog::endl;
-                cv::Mat outFrame = renderClassificationData(result->asRef<GestureClassificationResult>(), outputTransform, action_class_label);
+                cv::Mat outFrame = renderClassificationData(result->asRef<ClassificationResult>(), outputTransform, action_class_label);
                                 //--- Showing results and device information
                 presenter.drawGraphs(outFrame);
                 renderMetrics.update(renderingStart);
-                metrics.update(gestureclassificationResult.metaData->asRef<const ImageMetaData>().timeStamp,
+                metrics.update(classificationResult.metaData->asRef<const ImageMetaData>().timeStamp,
                                outFrame,
                                {10, 22},
                                cv::FONT_HERSHEY_COMPLEX,

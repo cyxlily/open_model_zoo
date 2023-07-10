@@ -122,43 +122,6 @@ static UNUSED void expendToTensor(const cv::Mat& mat, const ov::Tensor& tensor, 
     }
 }
 
-static UNUSED void gestureToTensor(const std::vector<cv::Mat> matArray, const ov::Tensor& tensor) {
-    ov::Shape tensorShape = tensor.get_shape();
-    //slog::info << "tensor size: " << tensor.get_size() << slog::endl;
-    static const ov::Layout layout("NCDHW");
-    const size_t width = tensorShape[ov::layout::width_idx(layout)];
-    const size_t height = tensorShape[ov::layout::height_idx(layout)];
-    const size_t channels = tensorShape[ov::layout::channels_idx(layout)];
-    const size_t duration = tensorShape[2];
-    //slog::info << "duration: " << duration << slog::endl;
-    if (static_cast<size_t>(matArray[0].channels()) != channels) {
-        throw std::runtime_error("The number of channels for model input and image must match");
-    }
-    if (channels != 1 && channels != 3) {
-        throw std::runtime_error("Unsupported number of channels");
-    }
-    if (tensor.get_element_type() == ov::element::f32) {
-        float_t* tensorData = tensor.data<float_t>();
-        for (size_t c = 0; c < channels; c++){
-            for (size_t d = 0; d < duration; d++){
-                for (size_t h = 0; h < height; h++){
-                    for (size_t w = 0; w < width; w++){
-                        tensorData[c * duration * width * height + d * width * height + h * width + w] =
-                            getMatValue<float_t>(matArray[d], h, w, c);}}}}
-    } else {
-        uint8_t* tensorData = tensor.data<uint8_t>();
-        if (matArray[0].depth() == CV_32F) {
-            throw std::runtime_error("Conversion of cv::Mat from float_t to uint8_t is forbidden");
-        }
-        for (size_t c = 0; c < channels; c++){
-            for (size_t d = 0; d < duration; d++){
-                for (size_t h = 0; h < height; h++){
-                    for (size_t w = 0; w < width; w++){
-                        tensorData[c * duration * width * height + d * width * height + h * width + w] =
-                            getMatValue<uint8_t>(matArray[d], h, w, c);}}}}
-    }
-}
-
 static UNUSED ov::Tensor wrapMat2Tensor(const cv::Mat& mat) {
     auto matType = mat.type() & CV_MAT_DEPTH_MASK;
     if (matType != CV_8U && matType != CV_32F) {
